@@ -17,7 +17,7 @@ namespace WindowsFormsApp1
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Program.AppContext = new ApplicationContext(new MainForm());
+            Program.AppContext = new ApplicationContext(new LoginForm());
             Application.Run(AppContext);
         }
         public static void SwitchMainForm(Form newForm)

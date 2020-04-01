@@ -12,9 +12,42 @@ namespace WindowsFormsApp1
 {
     public partial class ContinentsForm : Form
     {
+
+        private ListSortDirection sortType = ListSortDirection.Ascending;
+
+        private string filterColumnNameTitle
+        {
+            get
+            {
+                return "Назва колонки";
+            }
+        }
+        private string filterOperatorTitle
+        {
+            get
+            {
+                return "Логічний знак";
+            }
+        }
+
+        private string filterOperatorUsed;
+        private string filterColumnName;
+
         public ContinentsForm()
         {
             InitializeComponent();
+            hideSearchElements();
+            hideFilterElements();
+        }
+
+
+        private void resetFilter()
+        {
+            filterColumnsDropDown.Text = filterColumnNameTitle;
+            filterOperator.Text = filterOperatorTitle;
+
+            filterOperatorUsed = filterOperatorTitle;
+            filterColumnName = filterColumnNameTitle;
         }
 
         private void onLoad(object sender, EventArgs e)
@@ -22,6 +55,7 @@ namespace WindowsFormsApp1
             DBManager.bindingSource = new BindingSource();
             DBManager.bindingSource.DataSource = DBManager.performSql("SELECT * FROM sqlist18_1_das.continents");
             dataGridView1.DataSource = DBManager.bindingSource;
+            bindingNavigator1.BindingSource = DBManager.bindingSource;
 
             dataGridView1.DefaultCellStyle.SelectionBackColor = Color.White;
             dataGridView1.DefaultCellStyle.SelectionForeColor = Color.Black;
@@ -46,6 +80,222 @@ namespace WindowsFormsApp1
 
 
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.EnableResizing;
+
+            foreach (DataGridViewColumn column in dataGridView1.Columns)
+            {
+                ToolStripMenuItem toolStripButton = new ToolStripMenuItem();
+                toolStripButton.Text = column.Name;
+
+                filterColumnsDropDown.DropDownItems.Add(toolStripButton);
+            }
+        }
+
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.F))
+            {
+                showSearchElements();
+                return true;
+            }
+            else if (keyData == Keys.Enter)
+            {
+                if (filterValueTextBox.Focused)
+                {
+                    performFilter();
+                    hideFilterElements();
+                }
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+        private void onIdClick(object sender, EventArgs e)
+        {
+            idSortButton.Checked = true;
+            nameSortButton.Checked = false;
+            sortByColumnName("continent_id");
+        }
+
+        private void nameSortButton_Click(object sender, EventArgs e)
+        {
+            idSortButton.Checked = false;
+            nameSortButton.Checked = true;
+            sortByColumnName("continent_name");
+        }
+
+        private void sortByColumnName(string columnName)
+        {
+            foreach (DataGridViewColumn column in dataGridView1.Columns)
+            {
+                if (column.Name.Equals(columnName))
+                {
+                    dataGridView1.Sort(column, sortType);
+                    break;
+                }
+            }
+        }
+
+        private void aesClicked(object sender, EventArgs e)
+        {
+            sortType = ListSortDirection.Ascending;
+            ascendingSortButton.Checked = true;
+            descendingButton.Checked = false;
+        }
+
+        private void descClicked(object sender, EventArgs e)
+        {
+            sortType = ListSortDirection.Descending;
+            ascendingSortButton.Checked = false;
+            descendingButton.Checked = true;
+        }
+
+        
+
+        private void searchClick(object sender, EventArgs e)
+        {
+            hideFilterElements();
+            showSearchElements();
+        }
+
+        private void showSearchElements()
+        {
+            searchLabel.Visible = true;
+            searchTextBox.Visible = true;
+            searchTextBox.Text = "";
+            searchTextBox.Focus();
+            disableAllRows();
+        }
+
+        private void disableAllRows()
+        {
+            for (int i = 0; i < dataGridView1.RowCount; i++)
+            {
+                DataGridViewRow row = dataGridView1.Rows[i];
+                row.Selected = false;
+            }
+        }
+
+        private void hideSearchElements()
+        {
+            searchTextBox.Visible = false;
+            searchLabel.Visible = false;
+            searchTextBox.Text = "";
+            disableAllRows();
+        }
+
+        private void OnSearchTextBoxLeave(object sender, EventArgs e)
+        {
+            hideSearchElements();
+        }
+
+        private void OnSearchTextBoxChanged(object sender, EventArgs e)
+        {
+            string textToSearch = searchTextBox.Text;
+            for (int i = 0; i < dataGridView1.RowCount; i++)
+            {
+                DataGridViewRow row = dataGridView1.Rows[i];
+                row.Selected = false;
+                for (int j = 0; j < row.Cells.Count; j++)
+                {
+                    DataGridViewCell cell = row.Cells[j];
+                    object valueObj = cell.Value;
+                    if (valueObj != null)
+                    {
+                        string value = valueObj.ToString();
+                        if (value.Contains(textToSearch))
+                        {
+                            row.Selected = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void filterActionButton_Click(object sender, EventArgs e)
+        {
+            hideSearchElements();
+            showFilterElements();
+
+        }
+
+        private void showFilterElements()
+        {
+            filterOperator.Visible = true;
+            filterTitleLabel.Visible = true;
+            filterColumnsDropDown.Visible = true;
+            filterValueTextBox.Visible = true;
+            filterValueTextBox.Focus();
+            filterEnterTextButton.Visible = true;
+        }
+
+        private void hideFilterElements()
+        {
+            filterOperator.Visible = false;
+            filterTitleLabel.Visible = false;
+            filterColumnsDropDown.Visible = false;
+            filterValueTextBox.Visible = false;
+            filterEnterTextButton.Visible = false;
+            resetFilter();
+        }
+
+        private void onColumnToolstripSelected(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem != null)
+            {
+                filterColumnsDropDown.Text = e.ClickedItem.Text;
+                filterColumnName = e.ClickedItem.Text;
+            }
+        }
+
+        private void onFilterOperatorItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem != null)
+            {
+                filterOperator.Text = e.ClickedItem.Text;
+                filterOperatorUsed = e.ClickedItem.Text;
+            }
+        }
+        private void performFilter()
+        {
+            if (filterColumnName.Equals(filterColumnNameTitle) ||
+                filterOperatorUsed.Equals(filterOperatorTitle))
+            {
+                return;
+            }
+            string filterValue = filterValueTextBox.Text;
+
+            int tmpVal = 0;
+            bool isNum = int.TryParse(filterValue, out _)
+                            || long.TryParse(filterValue, out _)
+                            || double.TryParse(filterValue, out _)
+                            || float.TryParse(filterValue, out _);
+            bool isStr = !isNum;
+
+
+            try
+            {
+                string val = (isNum ? "" : "'");
+                string filterStr = $"{filterColumnName} {filterOperatorUsed} {val}{filterValue}{val}";
+                Console.WriteLine(filterStr);
+                DBManager.bindingSource.Filter = filterStr;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Неправильно вибрані фільтри");
+            }
+        }
+
+        private void filterEnterTextButton_Click(object sender, EventArgs e)
+        {
+            performFilter();
+            hideFilterElements();
+        }
+
+        private void onFilterValueLeave(object sender, EventArgs e)
+        {
+            performFilter();
+            hideFilterElements();
         }
     }
 }
